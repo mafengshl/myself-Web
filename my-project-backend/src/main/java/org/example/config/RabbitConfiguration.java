@@ -1,0 +1,21 @@
+package org.example.config;
+
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+/**
+ * RabbitMQ消息队列配置
+ */
+@Configuration
+@ConditionalOnProperty(name = "spring.rabbitmq.addresses")
+public class RabbitConfiguration {
+    @Bean("mailQueue")
+    public Queue emailQueue(){
+        return QueueBuilder
+                .durable("mail")
+                .build();
+    }
+}

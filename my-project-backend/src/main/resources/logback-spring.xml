@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+  ==============================================================================
+  Logback 日志框架配置文件
+  所属项目: GodplaceBlog 个人博客后端
+  功能描述: 配置日志的输出格式、输出位置、级别等行为
+  
+  Logback 是 Spring Boot 默认使用的日志框架，比 Log4j 更高效。
+  这个配置文件控制着应用运行时所有日志的生成和输出。
+  ==============================================================================
+-->
+<configuration>
+
+    <!-- 
+    ==========================================
+    1. 定义日志输出格式模板
+    ==========================================
+    这里使用 <property> 标签定义一个可复用的变量 LOG_PATTERN
+    格式说明:
+    %d{yyyy-MM-dd HH:mm:ss}  - 日期时间，格式为 年-月-日 时:分:秒
+    [%thread]               - 当前线程名称，用方括号包裹
+    %-5level                - 日志级别（-5 表示左对齐，占5个字符宽度）
+                             常见级别：DEBUG < INFO < WARN < ERROR
+    %logger{36}             - 日志记录器名称（类的全限定名），最多显示36个字符
+    [reqId:%X{reqId}]       - 请求追踪ID（通过 MDC 机制传入），用于链路追踪
+    %msg                    - 日志消息内容（我们代码中写的 log.info("xxx") 中的 xxx）
+    %n                      - 换行符
+    
+    完整输出示例:
+    2024-01-15 10:30:45 [http-nio-8080-exec-1] INFO  o.e.c.MyController [reqId:abc123] - 用户登录成功
+    -->
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} [reqId:%X{reqId}] - %msg%n"/>
+
+    <!-- 
+    ==========================================
+    2. 控制台输出 Appender
+    ==========================================
+    Appender 是日志输出目的地，这里配置输出到控制台（屏幕）
+    
+    class="ch.qos.logback.core.ConsoleAppender" 
+    - ConsoleAppender: 将日志输出到标准输出（控制台）
+    -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- 
+        Encoder（编码器）: 负责将日志事件转换为字节流输出
+        <pattern>: 指定使用上面定义的 LOG_PATTERN 格式
+        -->
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <!-- 控制台编码设置（防止中文乱码） -->
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 
+    ==========================================
+    3. 文件输出 Appender（按天滚动）
+    ==========================================
+    将日志输出到文件，并按日期自动分割（滚动存储）
+    
+    class="ch.qos.logback.core.rolling.RollingFileAppender"
+    - RollingFileAppender: 支持滚动（分割）的文件输出器
+    -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 
+        <file>: 指定当前活跃日志文件的路径和名称
+        这里 logs/log.txt 表示项目根目录下的 logs 文件夹中的 log.txt
+        -->
+        <file>logs/log.txt</file>
+        
+        <!-- 
+        RollingPolicy（滚动策略）: 定义何时、如何分割日志文件
+        
+        class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy"
+        - TimeBasedRollingPolicy: 按时间维度滚动（如每天、每周）
+        -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 
+            <fileNamePattern>: 滚动后的文件名模式
+            %d{yyyy-MM-dd} 会被替换为实际日期，例如:
+            log-2024-01-15.txt, log-2024-01-16.txt
+            -->
+            <fileNamePattern>logs/log-%d{yyyy-MM-dd}.txt</fileNamePattern>
+            
+            <!-- 
+            <maxHistory>: 保留历史日志文件的最大天数
+            设置为 30 表示只保留最近 30 天的日志，超过自动删除
+            -->
+            <maxHistory>30</maxHistory>
+            
+            <!-- 
+            <totalSizeCap>: 可选配置，日志文件总大小上限（如 1GB）
+            超过后会删除最旧的文件
+            -->
+            <!-- <totalSizeCap>1GB</totalSizeCap> -->
+        </rollingPolicy>
+        
+        <!-- 文件输出的编码器配置 -->
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <!-- 文件编码设置（确保中文正确存储） -->
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 
+    ==========================================
+    4. 日志级别配置（根 Logger）
+    ==========================================
+    <root>: 根日志记录器，所有日志的起点
+    
+    level="INFO": 设置根级别为 INFO
+    - DEBUG: 调试信息（最详细，开发阶段用）
+    - INFO: 一般信息（生产环境常用）
+    - WARN: 警告信息（可能有问题但不影响运行）
+    - ERROR: 错误信息（严重问题，需要处理）
+    
+    日志过滤规则: 只输出级别 >= 当前设置级别的日志
+    例如设置为 INFO，那么 DEBUG 级别不会输出，只输出 INFO/WARN/ERROR
+    
+    <appender-ref>: 引用上面定义的 Appender
+    这里同时引用 STDOUT（控制台）和 FILE（文件），表示日志同时输出到两个地方
+    -->
+    <root level="INFO">
+        <!-- 输出到控制台 -->
+        <appender-ref ref="STDOUT"/>
+        <!-- 输出到文件 -->
+        <appender-ref ref="FILE"/>
+    </root>
+
+    <!-- 
+    ==========================================
+    5. 自定义包级别配置（可选示例）
+    ==========================================
+    可以为特定的包或类设置独立的日志级别，覆盖根级别
+    
+    示例：
+    - 让 org.example 包下的日志输出 DEBUG 级别（更详细）
+    - 让 com.alipay 包下的日志只输出 WARN 级别（减少噪音）
+    -->
+    <!--
+    <logger name="org.example" level="DEBUG"/>
+    <logger name="com.alipay" level="WARN"/>
+    -->
+
+    <!-- 
+    日志级别说明总结:
+    DEBUG - 调试信息，开发阶段排查问题
+    INFO  - 一般信息，记录正常运行状态
+    WARN  - 警告信息，潜在问题的提醒
+    ERROR - 错误信息，严重错误需要处理
+    FATAL - 致命错误，系统即将崩溃
+    
+    注意：级别越高，输出的日志越少！
+    生产环境建议使用 INFO 或 WARN。
+    -->
+
+</configuration>
