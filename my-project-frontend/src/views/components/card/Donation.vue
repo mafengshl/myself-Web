@@ -46,7 +46,7 @@ const selectDefaultAmount = (amount) => {
       >
         <div class="payment-icon alipay">
           <!-- 替换为图片 -->
-          <img src="@/img/pay/alipay.png" alt="支付宝" />
+          <img src="@/img/pay/Alipay.png" alt="支付宝" />
         </div>
         <span>支付宝</span>
       </div>
